@@ -9,6 +9,55 @@ const SIM_DAYS_PER_SEC = 4.8;
 const CAMERA_HOME = new THREE.Vector3(0, 56, 132);
 const ORIGIN = new THREE.Vector3(0, 0, 0);
 
+// うんこの形状を作成する関数
+function createPoopGeometry(baseRadius) {
+  const geometry = new THREE.BufferGeometry();
+  const positions = [];
+  const normals = [];
+  const uvs = [];
+  const indices = [];
+
+  const segments = 24;
+  const layers = 8;
+  
+  for (let layer = 0; layer < layers; layer++) {
+    const t = layer / (layers - 1);
+    const y = baseRadius * 2.5 * t;
+    const radius = baseRadius * (1 - 0.3 * Math.sin(t * Math.PI));
+    const twist = t * Math.PI * 1.5;
+    
+    for (let seg = 0; seg <= segments; seg++) {
+      const theta = (seg / segments) * TAU + twist;
+      const x = Math.cos(theta) * radius;
+      const z = Math.sin(theta) * radius;
+      
+      positions.push(x, y, z);
+      
+      const nx = Math.cos(theta);
+      const nz = Math.sin(theta);
+      normals.push(nx, 0, nz);
+      
+      uvs.push(seg / segments, t);
+      
+      if (layer < layers - 1 && seg < segments) {
+        const a = layer * (segments + 1) + seg;
+        const b = a + segments + 1;
+        
+        indices.push(a, b, a + 1);
+        indices.push(b, b + 1, a + 1);
+      }
+    }
+  }
+  
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  
+  return geometry;
+}
+
 const canvas = document.querySelector("#scene");
 const speedInput = document.querySelector("#speed");
 const speedValue = document.querySelector("#speedValue");
@@ -69,7 +118,7 @@ const sunLight = new THREE.PointLight(0xffefca, 2.75, 2600, 1.65);
 scene.add(sunLight);
 
 const sun = new THREE.Mesh(
-  new THREE.SphereGeometry(6.8, 72, 72),
+  createPoopGeometry(6.8),
   new THREE.MeshStandardMaterial({
     color: 0xffd177,
     emissive: 0xffa53e,
@@ -81,7 +130,7 @@ const sun = new THREE.Mesh(
 scene.add(sun);
 
 const sunGlow = new THREE.Mesh(
-  new THREE.SphereGeometry(10.4, 42, 42),
+  createPoopGeometry(10.4),
   new THREE.MeshBasicMaterial({
     color: 0xffbf6f,
     transparent: true,
@@ -175,7 +224,7 @@ for (const data of planetData) {
   orbitPlane.add(orbitalGroup);
 
   const mesh = new THREE.Mesh(
-    new THREE.SphereGeometry(data.radius, 56, 56),
+    createPoopGeometry(data.radius),
     new THREE.MeshStandardMaterial({
       map: createPlanetTexture(data),
       roughness: data.pattern === "bands" ? 0.74 : 0.88,
@@ -188,7 +237,7 @@ for (const data of planetData) {
 
   if (data.hasAtmosphere) {
     const atmosphere = new THREE.Mesh(
-      new THREE.SphereGeometry(data.radius * 1.12, 36, 36),
+      createPoopGeometry(data.radius * 1.12),
       new THREE.MeshBasicMaterial({
         color: 0x74c5ff,
         transparent: true,
